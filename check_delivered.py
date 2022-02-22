@@ -2,18 +2,16 @@
 
 
 
-import json
-import os
-import time
 import os.path
 import logging
 import argparse
-import sys
+
+import ncheck
 
 RMAP = {"OK": {"code": 0},
-            "WARNING": {"code": 1},
-            "CRITICAL": {"code": 2},
-            "UNKNOWN": {"code": 3}}
+        "WARNING": {"code": 1},
+        "CRITICAL": {"code": 2},
+        "UNKNOWN": {"code": 3}}
 
 if __name__ == "__main__":
 
@@ -22,7 +20,10 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="append_const", help="Verbosity Controls",
                         const=1, default=[])
     parser.add_argument("-l", "--delivered_loc", default=os.environ.get("DELIVERED_LOC", "/var/spool/nagios/delivered"))
-    parser.add_argument("-m", "--fresh", default=30, type=int)
+    parser.add_argument("-3", "--s3", default=False, action="store_true", help="Look in S3 instead of local FS.")
+    parser.add_argument("-b", "--bucket", default=None, type=str, help="S3 Bucket to Reach Out to")
+    parser.add_argument("-p", "--aws_profile", default=None, type=str, help="AWS Profile to Use (default default).")
+    parser.add_argument("-m", "--fresh", default=60, type=int)
     parser.add_argument("host", default="host")
     parser.add_argument("check", default="check")
 
@@ -54,48 +55,21 @@ if __name__ == "__main__":
 
     logger = logging.getLogger("check_delivered.py")
 
-    # Find File
-    check_file = os.path.join(args.delivered_loc, "{}.{}.json".format(args.host, args.check))
+    this_check_kwargs = dict(fresh=args.fresh)
 
-    response = {"string": "UNKNOWN - Error",
-                "code": 3}
-
-    if os.path.isfile(check_file) is False or os.access(check_file, os.R_OK) is False:
-        # Return Error
-        response["string"] = "UNKNOWN - No Host/Check Combination Found"
+    # Build File URI Find File
+    if args.s3 is False:
+        # Local File
+        file_uri = os.path.join(args.delivered_loc, "{}.{}.json".format(args.host, args.check))
     else:
-        # Have File can Read
-        try:
-            with open(check_file, "r") as check_fobj:
-                data = json.load(check_fobj)
+        # S3
+        file_uri = "s3://{}/{}".format(args.bucket, "{}/{}.json".format(args.host, args.check))
 
-            # TODO add Json validator
+        this_check_kwargs["profile"] == args.aws_profile
 
-        except Exception as read_error:
-            # Unable to Read File
-            response["string"] = "UNKNOWN - Check Result Found, but Mangled"
-        else:
-            # Check Timeout
-            must_beat_ts = int(time.time()) - args.fresh * 60
+    this_check = ncheck.NCheck(uri=file_uri, **this_check_kwargs)
 
-            if data["ct"] < must_beat_ts:
-                response["string"] = "UNKNOWN - Check Result Found but Stale"
-            else:
-                # Parse
-                if data["result"] not in RMAP.keys():
-                    response["string"] = "UNKNOWN - Result {} Unknown"
-                else:
-                    response["code"] = RMAP[data["result"]]["code"]
-                    response["string"] = "{result} - {msg} ".format(**data)
+    this_check.do_response()
 
-                # Add perf Data
-                perf_bits = ["{}={}".format(k, v) for k, v in data.get("perf", dict()).items()]
-                if len(perf_bits) > 0:
-                    response["string"] = "{}| {}".format(response["string"], ", ".join(perf_bits))
-
-    # Response
-    print(response["string"])
-
-    sys.exit(response["code"])
 
 

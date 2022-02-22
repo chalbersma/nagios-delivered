@@ -1,0 +1,15 @@
+#
+# By Chris Halbersma
+# Starts nagios delievered
+#
+
+[Unit]
+Description=Runs periodically to grab performance statistics for this box and send them along
+
+[Service]
+Type=oneshot
+User={{ nrpe_user|default("nagios") }}
+ExecStart={{ path }}/deliver_nrpe.py -n {{ nrpe_path|default("/etc/nagios/nrpe.cfg", true) }} -C
+
+[Install]
+WantedBy=multi-user.target

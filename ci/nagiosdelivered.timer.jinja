@@ -1,0 +1,14 @@
+#
+# By Chris Halbersma
+# Starts nagios delievered on a Scheduled
+#
+
+[Unit]
+Description=Runs the nagiosdelivered unit file periodically (Every 15 Minutes)
+
+[Timer]
+Unit=nagiosdelivered.unit
+OnCalendar=*:0/15
+
+[Install]
+WantedBy=multi-user.target

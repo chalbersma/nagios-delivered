@@ -1,0 +1,30 @@
+{
+  "Parameters": {},
+  "Outputs": {},
+  "Resources": {
+    "s3bucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": "halbersma-nagios-delivered",
+        "VersioningConfiguration": {
+          "Status": "Enabled"
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "IgnorePublicAcls": true,
+          "BlockPublicPolicy": true,
+          "RestrictPublicBuckets": true
+        },
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "Id": "delete after 120 days",
+              "Status": "Enabled",
+              "ExpirationInDays": 120
+            }
+          ]
+        }
+      }
+    }
+  }
+}
