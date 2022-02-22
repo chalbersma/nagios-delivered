@@ -29,33 +29,44 @@ def read_nrpe_configuration(config_file=DEFAULT_NRPE, running_configuration={}, 
     config = configparser.ConfigParser(interpolation=None)
     logger = logging.getLogger("read_nrpe_configuration")
 
-    with open(args.nrped) as nrpe_cfg_fobj:
+    with open(config_file) as nrpe_cfg_fobj:
         config.read_file(itertools.chain(["[nrpe]"], nrpe_cfg_fobj), source=config_file)
 
     new_items = config._sections["nrpe"]
 
-    logger.debug(new_items)
-
-
     delivery_path = kwargs.get("delivery_path", new_items.get("delivery_path", None))
     delivery_profile = kwargs.get("delivery_profile", new_items.get("delivery_profile", None))
 
-    logger.debug(delivery_path, delivery_profile)
+    logger.debug(new_items)
 
-
-    for k, v in running_configuration.items():
+    for k, v in new_items.items():
         if k == "include":
             # Include Single File
             logger.debug("Processing File : {}".format(v))
-            new_items, x, y = read_nrpe_configuration(config_file=v,
-                                                running_configuration=new_items)
+            new_items, ipath, iprofile = read_nrpe_configuration(config_file=v,
+                                                                 running_configuration=new_items)
+            if ipath is not None:
+                delivery_path = ipath
+            if iprofile is not None:
+                delivery_profile = iprofile
         elif k == "include_dir":
             # Walk Dir and Include Files
+
+            logger.debug("Processing Dir : {}".format(v))
             for (dirpath, dirnames, filenames) in os.walk(v):
                 for singlefile in filenames:
                     this_file = dirpath + "/" + singlefile
-                    new_items, x, y = read_nrpe_configuration(config_file=this_file,
+                    logger.debug("Processing File : {}".format(this_file))
+                    new_items, dpath, dprofile = read_nrpe_configuration(config_file=this_file,
                                                         running_configuration=new_items)
+
+                    if dpath is not None:
+                        delivery_path = dpath
+                    if dprofile is not None:
+                        delivery_profile = dprofile
+
+    logger.debug("Deliver Path & Profile {} {}".format(delivery_path, delivery_profile))
+
 
     return {**new_items, **running_configuration}, delivery_path, delivery_profile
 
