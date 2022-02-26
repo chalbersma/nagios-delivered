@@ -1,11 +1,33 @@
 {
-  "Parameters": {},
-  "Outputs": {},
+  "Parameters": {
+    "BucketName": {
+      "Type": "String",
+      "Default": "halbersma-nagios-delivered",
+      "Description": "Enter the Bucket Name you wish to create"
+    }
+  },
+  "Outputs": {
+    "S3UserAKID": {
+      "Description": "Access Key ID For S3 Bot User",
+      "Value": {
+        "Ref": "S3UserCred"
+      }
+    },
+    "S3UserSK": {
+      "Description": "Secret Key For S3 Bot User",
+      "Value": {
+        "Fn::GetAtt": [
+          "S3UserCred",
+          "SecretAccessKey"
+        ]
+      }
+    }
+  },
   "Resources": {
     "s3bucket": {
       "Type": "AWS::S3::Bucket",
       "Properties": {
-        "BucketName": "halbersma-nagios-delivered",
+        "BucketName": {"Ref": "BucketName"},
         "VersioningConfiguration": {
           "Status": "Enabled"
         },
@@ -23,6 +45,62 @@
               "ExpirationInDays": 6
             }
           ]
+        }
+      }
+    },
+    "S3User": {
+      "Type": "AWS::IAM::User",
+      "Properties": {
+        "UserName": "dn_system",
+        "Policies": [
+          {
+            "PolicyName": "dn_system_s3_rw",
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:*"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:aws:s3:::",
+                          {
+                            "Ref": "s3bucket"
+                          }
+                        ]
+                      ]
+                    },
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "arn:aws:s3:::",
+                          {
+                            "Ref": "s3bucket"
+                          },
+                          "/*"
+                        ]
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "S3UserCred": {
+      "Type": "AWS::IAM::AccessKey",
+      "Properties": {
+        "Serial": 0,
+        "Status": "Active",
+        "UserName": {
+          "Ref": "S3User"
         }
       }
     }

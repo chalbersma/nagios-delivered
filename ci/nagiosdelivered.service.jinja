@@ -9,7 +9,7 @@ Description=Runs periodically to grab performance statistics for this box and se
 [Service]
 Type=oneshot
 User={{ nrpe_user|default("nagios") }}
-ExecStart={{ path }}/deliver_nrpe.py -n {{ nrpe_path|default("/etc/nagios/nrpe.cfg", true) }} -C
+ExecStart={{ path }}deliver_nrpe.py -n {{ nrpe_path|default("/etc/nagios/nrpe.cfg", true) }} -C
 
 [Install]
 WantedBy=multi-user.target
