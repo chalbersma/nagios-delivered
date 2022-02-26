@@ -18,9 +18,9 @@
         "LifecycleConfiguration": {
           "Rules": [
             {
-              "Id": "delete after 120 days",
+              "Id": "delete after 6 days",
               "Status": "Enabled",
-              "ExpirationInDays": 120
+              "ExpirationInDays": 6
             }
           ]
         }

@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     VERBOSE = len(args.verbose)
 
-    EXTRA_MODULES = ["boto3"]
+    EXTRA_MODULES = ["boto3", "urllib3", "botocore"]
     extra_level = logging.ERROR
 
     if VERBOSE == 0:
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     elif VERBOSE == 3:
         logging.basicConfig(level=logging.DEBUG)
         extra_level = logging.INFO
-    elif VERBOSE > 4:
+    elif VERBOSE >= 4:
         logging.basicConfig(level=logging.DEBUG)
         extra_level = logging.DEBUG
 
@@ -65,7 +65,10 @@ if __name__ == "__main__":
         # S3
         file_uri = "s3://{}/{}".format(args.bucket, "{}/{}.json".format(args.host, args.check))
 
-        this_check_kwargs["profile"] == args.aws_profile
+
+        this_check_kwargs["profile"] = args.aws_profile
+
+    logger.warning("Looking for Check at : {}".format(file_uri))
 
     this_check = ncheck.NCheck(uri=file_uri, **this_check_kwargs)
 

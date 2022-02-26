@@ -50,6 +50,8 @@ class NCheck:
             self.uri = urllib.parse.urlparse(self.kwargs["uri"])
             self.uri_args = urllib.parse.parse_qs(self.uri.query)
 
+            self.logger.debug(self.uri)
+
             # Get the Data from this, Process it below.
             self.kwargs["data"] = self.grab_data_from_uri()
 
@@ -123,10 +125,13 @@ class NCheck:
             if self.kwargs.get("s3_client", None) == None:
                 self.kwargs["s3_client"] = self.aws_client(client_type="s3")
 
+
             with io.BytesIO() as s3_file:
                 try:
-                    s3_obj = self.kwargs["s3_client"].Object(self.uri.netloc, self.uri.path.lstrip("/"))
-                    s3_obj.load()
+                    self.kwargs["s3_client"].download_fileobj(self.uri.netloc,
+                                                              self.uri.path.lstrip("/"),
+                                                              s3_file)
+
                 except botocore.exceptions.ClientError as ce:
                     if ce.response['Error']['Code'] == "404":
                         self.logger.info("File {} Doesn't exist".format(self.uri.geturl()))
@@ -136,9 +141,7 @@ class NCheck:
                             "result": "UNKNOWN",
                             "msg": "S3 Error : {}".format(ce)}
                 else:
-                    s3_obj.download_fobj(s3_file)
-
-                    data = json.load(s3_file)
+                    data = json.load(s3_file.read())
 
         elif self.uri.scheme in ("file", ""):
             local_file = self.uri.path

@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
     VERBOSE = len(args.verbose)
 
-    EXTRA_MODULES = ["boto3"]
+    EXTRA_MODULES = ["boto3", "urllib3", "botocore"]
     extra_level = logging.ERROR
 
     if VERBOSE == 0:
