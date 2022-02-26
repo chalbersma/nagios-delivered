@@ -9,6 +9,7 @@ import os.path
 import io
 import re
 import platform
+import socket
 
 import boto3
 import botocore.exceptions
@@ -39,7 +40,7 @@ class NCheck:
         self.RMAP = self.kwargs.get("rmap_override", self._RMAP)
         self.r_main = self.kwargs.get("r_main", self._r_main)
         self.r_perf = self.kwargs.get("r_perf", self._r_perf)
-        self.hostname = self.kwargs.get("hostname", platform.node())
+        self.hostname = self.kwargs.get("hostname", socket.getfqdn())
         self.checkname = self.kwargs.get("check", None)
         self.do_storage = self.kwargs.get("do_storage", False)
 
