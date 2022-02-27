@@ -27,7 +27,7 @@ class NCheck:
                     "CRITICAL": {"code": 2},
                     "UNKNOWN": {"code": 3}}
 
-    _r_main = r".+(OK|WARNING|CRITICAL|UNKNOWN)[:\-\s]+(.+)"
+    _r_main = r"(OK|WARNING|CRITICAL|UNKNOWN)[:\-\s]+(.+)"
     _r_perf = r"([\'\w+ ]+)=(\d+\.\d+|\d+)(;[\d\.]+;[\d\.]+;[\d\.]+)?"
 
     def __init__(self, **kwargs):
@@ -64,7 +64,7 @@ class NCheck:
 
         if "data" in self.kwargs.keys():
             self.data = self.kwargs["data"]
-            self.process_data()
+            self.response = self.process_data()
 
         if self.do_storage is True:
             self.store_to_file()
@@ -133,16 +133,17 @@ class NCheck:
                                                               self.uri.path.lstrip("/"),
                                                               s3_file)
 
+                    s3_file.seek(0)
+                    data = json.load(s3_file)
+                    self.logger.debug("data: {}".format(data))
                 except botocore.exceptions.ClientError as ce:
                     if ce.response['Error']['Code'] == "404":
                         self.logger.info("File {} Doesn't exist".format(self.uri.geturl()))
                     else:
                         self.logger.error("Unexpected S3 Client Error: {}".format(ce))
-                    data = {"ct": int(time.time()),
+                    data = {"ts": int(time.time()),
                             "result": "UNKNOWN",
                             "msg": "S3 Error : {}".format(ce)}
-                else:
-                    data = json.load(s3_file.read())
 
         elif self.uri.scheme in ("file", ""):
             local_file = self.uri.path
@@ -187,21 +188,25 @@ class NCheck:
         # Check Timeout
         must_beat_ts = int(time.time()) - self.fresh * 60
 
-        if self.data["ct"] < must_beat_ts:
-            self.response["string"] = "UNKNOWN - Check Result Found but Stale"
+        response = dict()
+
+        if self.data["ts"] < must_beat_ts:
+            response["string"] = "UNKNOWN - Check Result Found but Stale"
         else:
             # Parse
-            if self.data["result"] not in self.RMAP.keys():
-                self.response["string"] = "UNKNOWN - Result {} Unknown".format(self.data["result"])
+            if self.data["response"] not in self.RMAP.keys():
+                response["string"] = "UNKNOWN - Result {} Unknown".format(self.data["response"])
             else:
-                self.response["code"] = self.RMAP[self.data["result"]]["code"]
-                self.response["string"] = "{result} - {msg} ".format(**self.data)
+                response["code"] = self.RMAP[self.data["response"]]["code"]
+                response["string"] = "{response} - {msg} ".format(**self.data)
 
             # Add perf Data
             perf_bits = ["{}={}{}".format(k, v["stat"], v.get("thresholds", "")) for k, v in
                          self.data.get("perf", dict()).items()]
             if len(perf_bits) > 0:
-                self.response["string"] = "{}| {}".format(self.response["string"], " ".join(perf_bits))
+                response["string"] = "{}| {}".format(response["string"], " ".join(perf_bits))
+
+        return response
 
     def store_to_file(self, path=None):
 
