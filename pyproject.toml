@@ -1,0 +1,31 @@
+[build-system]
+requires = [
+  "twine",
+  "setuptools"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nagios-delivered"
+version = "2023.08.30-0"
+authors = [
+  { name="Chris Halbersma", email="chris@halbersma.us" },
+]
+description = "A Package to Read Checks off of an S3 bucket rather than. Local Process"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "boto3",
+    "botocore",
+    "json-fix"
+]
+
+[options]
+packages = ["ncheck"]
+scripts = ["check_delivered.py",
+           "deliver_nrpe.py"]

@@ -131,3 +131,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 /.idea
+/.kdev4/
+/nagios-delivered.kdev4
